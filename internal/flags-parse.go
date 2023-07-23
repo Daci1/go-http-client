@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -18,8 +19,10 @@ func ParseFlags(args []string) (*HttpReqConfig, error) {
 	verb := flag.String("v", "GET", "Request verb. Default is GET.")
 	url := flag.String("u", "", "Request URL.")
 	body := flag.String("b", "", "Request Body. Default is an empty body.")
+	bodyInputFile := flag.String("i", "", "Provides a JSON file for the request body content of a request. Empty path is used by default.")
 	headers := flag.String("h", "", "Request Headers.")
-	pretty := flag.Bool("pretty", false, "")
+	headersInputFile := flag.String("hi", "", "Provides a JSON file for the request headers. Empty path is used by default.")
+	pretty := flag.Bool("pretty", false, "Formats the JSON response.")
 
 	flag.Parse()
 
@@ -28,21 +31,26 @@ func ParseFlags(args []string) (*HttpReqConfig, error) {
 		"url", *url,
 		"body", *body,
 		"headers", *headers,
+		"bodyInputFile", *bodyInputFile,
+		"headersInputFile", *headersInputFile,
 		"pretty", strconv.FormatBool(*pretty),
 	); err != nil {
 		return nil, err
 	}
 
-	parsedBody := strings.NewReader(flags.flagsMap["body"])
-	var parsedHeaders map[string]string
+	parsedBody, err := getParsedBody()
 
-	if len(*headers) > 0 {
-		if err := json.Unmarshal([]byte(flags.flagsMap["headers"]), &parsedHeaders); err != nil {
-			return nil, err
-		}
+	if err != nil {
+		return nil, err
 	}
 
-	reqConfig := &HttpReqConfig{flags.flagsMap["verb"], flags.flagsMap["url"], parsedBody, parsedHeaders}
+	parsedHeaders, err := getParsedHeaders()
+
+	if err != nil {
+		return nil, err
+	}
+
+	reqConfig := &HttpReqConfig{flags.flagsMap["verb"], flags.flagsMap["url"], strings.NewReader(parsedBody), parsedHeaders}
 
 	return reqConfig, nil
 }
@@ -65,4 +73,62 @@ func addFlagsToMap(pairs ...string) error {
 	}
 
 	return nil
+}
+
+func getParsedBody() (string, error) {
+
+	var body string
+
+	if flags.flagsMap["bodyInputFile"] != "" && flags.flagsMap["body"] != "" {
+		return "", errors.New("You should pick either input file or CLI input for body")
+	}
+
+	if flags.flagsMap["bodyInputFile"] != "" {
+		data, err := os.ReadFile(flags.flagsMap["bodyInputFile"])
+
+		if err != nil {
+			return "", err
+		}
+
+		if json.Valid(data) {
+			return string(data), nil
+		} else {
+			return "", errors.New("Body input file contains invalid JSON.")
+		}
+	} else {
+		body = flags.flagsMap["body"]
+		return body, nil
+	}
+}
+
+func getParsedHeaders() (map[string]string, error) {
+
+	if flags.flagsMap["headersInputFile"] != "" && flags.flagsMap["headers"] != "" {
+		return nil, errors.New("You should pick either input file or CLI input for headers")
+	}
+
+	if flags.flagsMap["headersInputFile"] != "" {
+		data, err := os.ReadFile(flags.flagsMap["headersInputFile"])
+
+		if err != nil {
+			return nil, err
+		}
+
+		if json.Valid(data) {
+			return extractHeaders(string(data))
+		} else {
+			return nil, errors.New("Headers input file contains invalid JSON.")
+		}
+	} else {
+		return extractHeaders(flags.flagsMap["headers"])
+	}
+}
+
+func extractHeaders(str string) (map[string]string, error) {
+	var headers map[string]string
+	if err := json.Unmarshal([]byte(str), &headers); err != nil {
+		return nil, err
+	}
+
+	return headers, nil
 }

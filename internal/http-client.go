@@ -3,6 +3,7 @@ package internal
 import (
 	"io"
 	"net/http"
+	"strings"
 )
 
 type HttpReqConfig struct {
@@ -47,6 +48,6 @@ func readResponseBody(res *http.Response) (string, error) {
 
 func addHeadersToRequest(req *http.Request, headers map[string]string) {
 	for k, v := range headers {
-		req.Header.Add(k, v)
+		req.Header.Add(strings.Trim(k, " "), strings.Trim(v, " "))
 	}
 }

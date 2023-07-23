@@ -6,8 +6,10 @@ The Go HTTP Client is a command-line tool developed in Go that allows you to mak
 
 - **URL (-u):** Specifies the target URL to send the HTTP request.
 - **Verb (-v):** Specifies the HTTP method verb to be used (e.g., GET, POST, PUT, DELETE). GET is used by default.
-- **Body (-b):** Provides the request body content for POST or PUT requests. Empty body is used by default.
+- **Body (-b):** Provides the request body content for requests. Empty body is used by default.
+- **Input file for Body (-i):** Provides a JSON file for the request body content of requests. Empty path is used by default.
 - **Headers (-h):** Allows you to include additional HTTP headers in the request.
+- **Input file for Headers (-hi):** Provides a JSON file for the request headers. Empty path is used by default.
 - **Help (-help):** Displays a list of all available command-line flags.
 - **Pretty (-pretty):** Formats the JSON response in a pretty printed format.
 
@@ -34,12 +36,12 @@ go-http-client -u https://api.example.com/resource
 ```
 * Make a POST request with a request body:
 ```bash
-go-http-client -u https://api.example.com/resource -v POST -b '{\"name\":\"John\",\"age\":30}'
+go-http-client -u https://api.example.com/resource -v POST -b '{\"name\":\"John\",\"age\":30}' -h '{ \"Content-Type\": \"application/json\"}'
 ```
 
 ## Future Work
-- Option to Use JSON Files for Body
-- Option to Use JSON Files for Headers
+- ~~Option to Use JSON Files for Body~~
+- ~~Option to Use JSON Files for Headers~~
 - Export to Different File Formats
 
 ## Conclusion
